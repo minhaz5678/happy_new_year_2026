@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Happy New Year 2026</title>
+
+<style>
+body {
+    margin: 0;
+    overflow: hidden;
+    background: black;
+    color: white;
+    font-family: Arial, sans-serif;
+}
+
+/* ENTER SCREEN */
+#enterScreen {
+    position: fixed;
+    inset: 0;
+    background: black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    z-index: 20;
+}
+#enterScreen h1 {
+    font-size: 3rem;
+    text-shadow: 0 0 20px gold;
+}
+
+/* PARTY */
+#party { display: none; }
+
+canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+}
+
+.message {
+    position: absolute;
+    top: 20px;
+    width: 100%;
+    text-align: center;
+    font-size: 2.5rem;
+    text-shadow: 0 0 20px gold;
+    z-index: 10;
+}
+</style>
+</head>
+
+<body>
+
+<!-- ENTER PAGE -->
+<div id="enterScreen">
+    <h1>🎉 Press ENTER 🎉</h1>
+    <p>Move your mouse to paint the sky</p>
+</div>
+
+<!-- PARTY -->
+<div id="party">
+    <div class="message">🎆 Happy New Year 2026 🎆</div>
+    <canvas id="canvas"></canvas>
+</div>
+
+<audio id="music" loop>
+    <source src="music.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+const enterScreen = document.getElementById("enterScreen");
+const party = document.getElementById("party");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const music = document.getElementById("music");
+
+canvas.width = innerWidth;
+canvas.height = innerHeight;
+window.onresize = () => {
+    canvas.width = innerWidth;
+    canvas.height = innerHeight;
+};
+
+let entered = false;
+let mouse = { x: innerWidth/2, y: innerHeight/2, px: 0, py: 0 };
+let rockets = [], particles = [];
+
+/* ENTER PARTY */
+document.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+        enterScreen.style.display = "none";
+        party.style.display = "block";
+        entered = true;
+    }
+});
+
+/* MUSIC ON CLICK */
+document.addEventListener("click", () => {
+    if (entered && music.paused) music.play();
+});
+
+/* MOUSE MOVE */
+document.addEventListener("mousemove", e => {
+    if (!entered) return;
+    mouse.px = mouse.x;
+    mouse.py = mouse.y;
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+});
+
+/* RAINBOW COLOR BASED ON DIRECTION */
+function directionHue() {
+    const dx = mouse.x - mouse.px;
+    const dy = mouse.y - mouse.py;
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+        return dx > 0 ? 30 : 200;   // orange → cyan
+    } else {
+        return dy < 0 ? 120 : 300; // green → purple
+    }
+}
+
+/* TRAIL FIREWORK */
+function launchTrail() {
+    rockets.push({
+        x: mouse.x,
+        y: canvas.height,
+        targetY: mouse.y,
+        hue: directionHue(),
+        speed: 5 + Math.random() * 2
+    });
+}
+
+/* EXPLOSION WITH RAINBOW GRADIENT */
+function explode(x, y, baseHue) {
+    for (let i = 0; i < 70; i++) {
+        particles.push({
+            x, y,
+            a: Math.random() * Math.PI * 2,
+            s: Math.random() * 3 + 1,
+            l: 1,
+            hue: baseHue + Math.random() * 80
+        });
+    }
+}
+
+/* ANIMATION LOOP */
+function animate() {
+    ctx.fillStyle = "rgba(0,0,0,0.18)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    if (entered) launchTrail();
+
+    rockets.forEach((r, i) => {
+        r.y -= r.speed;
+        ctx.fillStyle = "white";
+        ctx.fillRect(r.x, r.y, 2, 10);
+
+        if (r.y <= r.targetY) {
+            explode(r.x, r.y, r.hue);
+            rockets.splice(i, 1);
+        }
+    });
+
+    particles.forEach((p, i) => {
+        p.x += Math.cos(p.a) * p.s;
+        p.y += Math.sin(p.a) * p.s;
+        p.l -= 0.025;
+
+        /* RAINBOW GRADIENT */
+        ctx.fillStyle = `hsla(${p.hue}, 100%, 60%, ${p.l})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (p.l <= 0) particles.splice(i, 1);
+    });
+
+    requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+
+</body>
+</html>
